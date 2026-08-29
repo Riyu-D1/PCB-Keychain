@@ -1,4 +1,4 @@
-# 2026-08-28 — Initial Product Research
+# 2026-08-27 — Initial Product Research
 
 ## Time spent: 45 mins
 
@@ -13,3 +13,4 @@ I want to create a very thin, portable PCB keychain with an integrated display a
 - A small battery
 - The entire electronics assembly integrated into a compact keychain-shaped PCB
 <img width="1059" height="749" alt="image" src="https://github.com/user-attachments/assets/795ad6b0-a746-4871-b309-4ee80042259d" />
+
