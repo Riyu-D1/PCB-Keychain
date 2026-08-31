@@ -34,6 +34,8 @@ Fix:
 
 # 2026-08-31 — PCB desgin
 
+## Time spent: 3hrs 32mins
+
 Today I wanted to finish off the KiCad part of the project as it was last day of submission therefore I got to work on the PCB wiring and organisation. 
 
 Problems:
