@@ -31,3 +31,16 @@ Fix:
 - For the charging indicators I added a 4 very small onboard leds which will. also be user customisable
 - I decided to go with a lipo battery for easy charging
 <img width="1059" height="749" alt="image" src="https://github.com/user-attachments/assets/a3f1de75-bd9b-458c-837d-ce02dd3c7803" />
+
+# 2026-08-31 — PCB desgin
+
+Today I wanted to finish off the KiCad part of the project as it was last day of submission therefore I got to work on the PCB wiring and organisation. 
+
+Problems:
+- The organisation of the components was not something I had thought about before and because I wanted to conserve as much space as possible I wanted to efficiently yet sensibly place the components in a way in which they were not only aesthetically pleasing but also accesible to solder 
+- The wiring was seeming initially difficult as there were not a lot of components but as I progressed I realised that because I wanted to conserve as much space as possible it lead to the wiring being quite difficult to organise
+
+Fix:
+- I exported a step file of the plain pcb and imported it into shpr3d to help me visualise the components and sizing. For the E ink display I looked art the specification and just created a cuboid which was 1mm larger on all sides to account for any tolerance required. This allowed me to place the components accordingly to how they would actually look on the board itself which I then applied onto the pcb.
+- For the wiring it took me about 4 attempts before I could get the final outcome I was happy with. Although there was little space because I had already created a rough layout for the componants I could now rearrange them confidently to create paths for the routing. Regardless I still had to use a lot of via's to distribute and ensure that all the components were connected.
+<img width="1059" height="749" alt="image" src="https://github.com/user-attachments/assets/d8554e66-96fc-45e5-b25c-01b414c65735" />
