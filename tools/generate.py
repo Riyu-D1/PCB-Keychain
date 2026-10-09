@@ -684,8 +684,216 @@ def xform(fx, fy, fr, side, px, py):
     return fx + ox, fy + oy
 
 
+# placement: ref -> (x, y, rot, side)  absolute mm on board
+PLACEMENT = {
+    # usb-c + protection on left edge, port faces left
+    "J3": (26.0, 55.0, 90, "F"),
+    "D1": (34.0, 48.0, 90, "F"),
+    "F1": (36.0, 60.0, 90, "F"),
+    "C1": (40.0, 66.0, 0, "F"),
+    "U6": (33.0, 55.0, 0, "F"),
+    "R1": (40.0, 50.0, 0, "F"),
+    "R2": (40.0, 46.0, 0, "F"),
+    "R3": (45.0, 58.0, 90, "F"),
+    "R4": (45.0, 62.0, 90, "F"),
+    # charger group
+    "U2": (30.0, 66.0, 0, "F"),
+    "C2": (30.0, 71.0, 0, "F"),
+    "R5": (24.0, 70.0, 0, "F"),
+    "LED1": (24.0, 74.0, 0, "F"),
+    "R6": (28.0, 74.0, 90, "F"),
+    "J2": (24.0, 62.0, 270, "F"),
+    # switch + LDO
+    "SW3": (44.0, 66.0, 0, "F"),
+    "U3": (52.0, 60.0, 0, "F"),
+    "C3": (52.0, 66.0, 0, "F"),
+    "C4": (52.0, 54.0, 0, "F"),
+    # boost + level shift
+    "U4": (68.0, 56.0, 0, "F"),
+    "L1": (62.0, 62.0, 90, "F"),
+    "C8": (62.0, 56.0, 0, "F"),
+    "C9": (74.0, 50.0, 0, "F"),
+    "R11": (72.0, 62.0, 90, "F"),
+    "R12": (72.0, 66.0, 90, "F"),
+    "R13": (64.0, 50.0, 0, "F"),
+    "U5": (78.0, 60.0, 0, "F"),
+    "R14": (78.0, 66.0, 90, "F"),
+    # LEDs along bottom edge
+    "LED3": (46.0, 73.0, 0, "F"),
+    "LED4": (53.0, 73.0, 0, "F"),
+    "LED5": (60.0, 73.0, 0, "F"),
+    "LED6": (67.0, 73.0, 0, "F"),
+    "C10": (44.0, 73.0, 0, "F"),
+    "C11": (50.5, 73.0, 0, "F"),
+    "C12": (57.5, 73.0, 0, "F"),
+    "C13": (64.5, 73.0, 0, "F"),
+    # mcu + local passives
+    "U1": (72.0, 36.0, 0, "F"),
+    "C5": (62.0, 42.0, 0, "F"),
+    "C14": (62.0, 38.0, 0, "F"),
+    "C6": (62.0, 34.0, 0, "F"),
+    "R7": (58.0, 34.0, 90, "F"),
+    "R8": (58.0, 38.0, 90, "F"),
+    "R9": (80.0, 46.0, 0, "F"),
+    "R10": (80.0, 50.0, 0, "F"),
+    "C7": (84.0, 50.0, 0, "F"),
+    "SW1": (84.0, 38.0, 0, "F"),
+    "SW2": (84.0, 42.0, 0, "F"),
+    "SW4": (66.0, 28.0, 0, "F"),
+    "SW5": (78.0, 28.0, 0, "F"),
+    "LED2": (58.0, 42.0, 0, "F"),
+    "R15": (54.0, 42.0, 0, "F"),
+    # oled header top center + keyring hole in lug
+    "J1": (40.0, 30.0, 90, "F"),
+    "H1": (34.0, 17.0, 0, "F"),
+}
+
+
 def build_pcb():
-    return ""
+    # net numbering: 0 = unconnected, then sorted schematic net names
+    pinnet = {}
+    for net, pins in NETS.items():
+        for rp in pins:
+            pinnet[rp] = net
+    netnames = sorted(NETS)
+    netid = {n: i + 1 for i, n in enumerate(netnames)}
+
+    out = ['(kicad_pcb', '\t(version 20241229)', '\t(generator "pcbnew")',
+           '\t(generator_version "10.0")',
+           '\t(general', '\t\t(thickness 1.6)', '\t\t(legacy_teardrops no)',
+           '\t)', '\t(paper "A4")',
+           '\t(layers',
+           '\t\t(0 "F.Cu" signal)', '\t\t(2 "B.Cu" signal)',
+           '\t\t(9 "F.Adhes" user "F.Adhesive")',
+           '\t\t(11 "B.Adhes" user "B.Adhesive")',
+           '\t\t(13 "F.Paste" user)', '\t\t(15 "B.Paste" user)',
+           '\t\t(5 "F.SilkS" user "F.Silkscreen")',
+           '\t\t(7 "B.SilkS" user "B.Silkscreen")',
+           '\t\t(1 "F.Mask" user)', '\t\t(3 "B.Mask" user)',
+           '\t\t(17 "Dwgs.User" user "User.Drawings")',
+           '\t\t(19 "Cmts.User" user "User.Comments")',
+           '\t\t(21 "Eco1.User" user "User.Eco1")',
+           '\t\t(23 "Eco2.User" user "User.Eco2")',
+           '\t\t(25 "Edge.Cuts" user)', '\t\t(27 "Margin" user)',
+           '\t\t(31 "F.CrtYd" user "F.Courtyard")',
+           '\t\t(29 "B.CrtYd" user "B.Courtyard")', '\t)',
+           '\t(setup',
+           '\t\t(pad_to_mask_clearance 0)',
+           '\t\t(allow_soldermask_bridges_in_footprints no)',
+           '\t\t(tenting front back)',
+           '\t\t(pcbplotparams',
+           '\t\t\t(layerselection 0x00000000_00000000_00000000_000000a5)',
+           '\t\t\t(plot_on_all_layers_selection 0x00000000_00000000_00000000_00000000)',
+           '\t\t\t(disableapertmacros no)', '\t\t\t(usegerberextensions yes)',
+           '\t\t\t(usegerberattributes no)', '\t\t\t(usegerberadvancedattributes no)',
+           '\t\t\t(creategerberjobfile no)', '\t\t\t(dashed_line_dash_ratio 12.0)',
+           '\t\t\t(dashed_line_gap_ratio 3.0)', '\t\t\t(svgprecision 6)',
+           '\t\t\t(plotframeref no)', '\t\t\t(mode 1)', '\t\t\t(useauxorigin no)',
+           '\t\t\t(hpglpennumber 1)', '\t\t\t(hpglpenspeed 20)',
+           '\t\t\t(hpglpendiameter 15.0)', '\t\t\t(pdf_front_fp_property_popups yes)',
+           '\t\t\t(pdf_back_fp_property_popups yes)', '\t\t\t(pdf_metadata yes)',
+           '\t\t\t(pdf_single_document no)', '\t\t\t(dxfpolygonmode yes)',
+           '\t\t\t(dxfimperialunits yes)', '\t\t\t(dxfusepcbnewfont yes)',
+           '\t\t\t(psnegative no)', '\t\t\t(psa4output no)',
+           '\t\t\t(plot_black_and_white yes)', '\t\t\t(plotinvisibletext no)',
+           '\t\t\t(sketchpadsonfab no)', '\t\t\t(plotpadnumbers no)',
+           '\t\t\t(hidednponfab no)', '\t\t\t(sketchdnponfab yes)',
+           '\t\t\t(crossoutdnponfab yes)', '\t\t\t(subtractmaskfromsilk no)',
+           '\t\t\t(outputformat 1)', '\t\t\t(mirror no)', '\t\t\t(drillshape 1)',
+           '\t\t\t(scaleselection 1)', '\t\t\t(outputdirectory "")',
+           '\t\t)', '\t)']
+
+    # net list
+    out.append('\t(net 0 "")')
+    for n in netnames:
+        out.append(f'\t(net {netid[n]} "{n}")')
+
+    # footprints -----------------------------------------------------------
+    for ref, libsym, value, fp, *_ in COMPONENTS:
+        x, y, rot, side = PLACEMENT[ref]
+        body = load_fp(fp).rstrip()
+        # qualify name, fix layer, insert board fields
+        body = re.sub(r'\(footprint "[^"]+"', f'(footprint "{fp}"',
+                      body, count=1)
+        body = body.replace('(layer "F.Cu")', f'(layer "{side}.Cu")', 1)
+        ins = (f'\n\t\t(uuid "{U("fp:"+ref)}")'
+               f'\n\t\t(at {fmt(x)} {fmt(y)} {rot})'
+               f'\n\t\t(path "/{SHEET_UUID}")'
+               '\n\t\t(sheetname "/")'
+               f'\n\t\t(sheetfile "{PROJ}.kicad_sch")')
+        i = body.index('(layer "')
+        j = body.index(')', i)
+        body = body[:j + 1] + ins + body[j + 1:]
+        # inject (net ...) into each pad
+        parts = []
+        last = 0
+        for m in re.finditer(r'\(pad "([^"]*)"', body):
+            st = m.start()
+            pb = _block(body, st)
+            net = pinnet.get((ref, m.group(1)))
+            nb = (f'\n\t\t\t(net {netid[net]} "{net}")' if net else "")
+            parts.append(body[last:st])
+            parts.append(pb.rstrip()[:-1] + nb + ")")
+            last = st + len(pb)
+        parts.append(body[last:])
+        body = "".join(parts)
+        # set Reference/Value property values
+        body = re.sub(r'\(property "Reference" "[^"]*"',
+                      f'(property "Reference" "{ref}"', body, count=1)
+        body = re.sub(r'\(property "Value" "[^"]*"',
+                      f'(property "Value" "{value}"', body, count=1)
+        out.append("\t" + body.replace("\n", "\n\t"))
+
+    # board outline: main rect + rounded lug with keyring hole -------------
+    def edge_line(x1, y1, x2, y2):
+        out.append(f'\t(gr_line (start {fmt(x1)} {fmt(y1)}) '
+                   f'(end {fmt(x2)} {fmt(y2)}) '
+                   '(stroke (width 0.1) (type solid)) '
+                   f'(layer "Edge.Cuts") (uuid "{U("ec")}"))')
+
+    def edge_arc(x1, y1, mx, my, x2, y2):
+        out.append(f'\t(gr_arc (start {fmt(x1)} {fmt(y1)}) '
+                   f'(mid {fmt(mx)} {fmt(my)}) (end {fmt(x2)} {fmt(y2)}) '
+                   '(stroke (width 0.1) (type solid)) '
+                   f'(layer "Edge.Cuts") (uuid "{U("ec")}"))')
+
+    # main rectangle
+    edge_line(BX0, BY0, LUG_X0, BY0)
+    edge_line(LUG_X1, BY0, BX0 + BW, BY0)
+    edge_line(BX0 + BW, BY0, BX0 + BW, BY0 + BH)
+    edge_line(BX0 + BW, BY0 + BH, BX0, BY0 + BH)
+    edge_line(BX0, BY0 + BH, BX0, BY0)
+    # lug: up from (LUG_X0,BY0), arc over top, down to (LUG_X1,BY0)
+    lug_top = LUG_TOP
+    edge_line(LUG_X0, BY0, LUG_X0, lug_top + LUG_R)
+    edge_line(LUG_X1, lug_top + LUG_R, LUG_X1, BY0)
+    edge_arc(LUG_X0, lug_top + LUG_R, (LUG_X0 + LUG_X1) / 2, lug_top,
+             LUG_X1, lug_top + LUG_R)
+
+    # zones: GND pour both sides over the main rectangle -------------------
+    zonepts = (f'(xy {fmt(BX0)} {fmt(BY0)}) (xy {fmt(BX0+BW)} {fmt(BY0)}) '
+               f'(xy {fmt(BX0+BW)} {fmt(BY0+BH)}) (xy {fmt(BX0)} {fmt(BY0+BH)})')
+    for layer in ("F.Cu", "B.Cu"):
+        out.append(f'\t(zone (net {netid["GND"]}) (net_name "GND") '
+                   f'(layer "{layer}") (uuid "{U("zone:"+layer)}") '
+                   '(hatch edge 0.508) '
+                   '(connect_pads (clearance 0.3)) '
+                   '(min_thickness 0.254) (filled_areas_thickness no) '
+                   '(fill (thermal_gap 0.3) (thermal_bridge_width 0.4)) '
+                   f'(polygon (pts {zonepts})))')
+
+    # silkscreen title
+    out.append(f'\t(gr_text "PCB KEYCHAIN" (at 54 33 0) '
+               '(layer "F.SilkS") '
+               f'(uuid "{U("grt1")}") '
+               '(effects (font (size 2.5 2.5) (thickness 0.4))))')
+    out.append(f'\t(gr_text "rev A - devin" (at 54 37 0) '
+               '(layer "F.SilkS") '
+               f'(uuid "{U("grt2")}") '
+               '(effects (font (size 1 1) (thickness 0.15))))')
+
+    out.append(')')
+    return "\n".join(out) + "\n"
 
 
 def main():
