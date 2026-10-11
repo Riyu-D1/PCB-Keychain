@@ -24,7 +24,7 @@
 | [Waveshare 2.36inch e-Paper Module (G)](https://www.waveshare.com/2.36inch-e-paper-module-g.htm) | — | 1 | $15.19 | $15.19 | [Waveshare](https://www.waveshare.com/2.36inch-e-paper-module-g.htm) |
 | [LiPo 3.7V 400mAh with JST-PH](https://www.adafruit.com/product/3898) | — | 1 | $6.95 | $6.95 | [Adafruit](https://www.adafruit.com/product/3898) |
 | **Parts subtotal** | — | — | — | **$28.15** | — |
-| **Tax & shipping** | — | — | — | **$0.00** | — |
-| **Total** | — | — | — | **$28.15** | — |
+| **Tax & shipping** | — | — | — | **$10.00** | — |
+| **Total** | — | — | — | **$38.15** | — |
 
-$1.85 left of the tier's funding.
+**$8.15 over the tier's funding.** Every tier gives a fixed amount for parts, so this needs cutting back or a higher tier.
