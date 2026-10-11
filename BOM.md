@@ -19,7 +19,6 @@
 | [1x8 2.54mm header (EPAPER)](https://www.lcsc.com/product-detail/C2337.html) | — | 1 | $0.16 | $0.16 | [LCSC](https://www.lcsc.com/product-detail/C2337.html) |
 | [1x8 2.54mm header (SuperMini, cut from J1's 1x40 strip)](https://www.lcsc.com/product-detail/C2337.html) | — | 2 | $0.00 | $0.00 | [LCSC](https://www.lcsc.com/product-detail/C2337.html) |
 | [JST PH 2-pin B2B-PH-K](https://www.lcsc.com/product-detail/C131337.html) | — | 1 | $0.04 | $0.04 | [LCSC](https://www.lcsc.com/product-detail/C131337.html) |
-| [1.2k](https://www.lcsc.com/product-detail/C22765.html) | — | 1 | $0.00 | $0.00 | [LCSC](https://www.lcsc.com/product-detail/C22765.html) |
 | [PCM12 SPDT slide switch](https://www.lcsc.com/product-detail/C221841.html) | — | 1 | $1.28 | $1.28 | [LCSC](https://www.lcsc.com/product-detail/C221841.html) |
 | [TP4056](https://www.lcsc.com/product-detail/C16581.html) | — | 1 | $0.19 | $0.19 | [LCSC](https://www.lcsc.com/product-detail/C16581.html) |
 | [ESP32-C3 SuperMini](https://www.tindie.com/products/adz1122/esp32-c3-development-board-esp32-supermini/) | — | 1 | $3.90 | $3.90 | [Tindie (Maker go)](https://www.tindie.com/products/adz1122/esp32-c3-development-board-esp32-supermini/) |
