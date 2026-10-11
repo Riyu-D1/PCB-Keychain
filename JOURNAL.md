@@ -10,7 +10,7 @@
 
 | Week | Tier | Hours logged | Entries |
 | --- | --- | --- | --- |
-| Week 1 | Tier 1 | 5.94h | 6 |
+| Week 1 | Tier 1 | 6.04h | 6 |
 
 ## Contents
 
@@ -65,7 +65,7 @@ So it turns out that the parts I chose were to complex and i wouldnt be able to 
 
 ### 2026-10-11 – Just fixing minor errors. with the drc checker. The errors that occurred were mainly shorting connections with the gnd fill zones that i had used therefore I had to revert to manually connecting all t
 
-**0.1h**
+**0.2h**
 
 Just fixing minor errors. with the drc checker. The errors that occurred were mainly shorting connections with the gnd fill zones that i had used therefore I had to revert to manually connecting all the ground.
 
