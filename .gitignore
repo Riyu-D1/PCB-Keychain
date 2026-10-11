@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 *-erc.rpt
 *.net
+tools/freerouting-*.jar
