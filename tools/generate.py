@@ -684,69 +684,97 @@ def xform(fx, fy, fr, side, px, py):
     return fx + ox, fy + oy
 
 
+def _hide_silk(body):
+    """Add (hide yes) to Reference/Value text effects inside a footprint."""
+    spans = []
+    for m in re.finditer(
+            r'\(property "(?:Reference|Value)"|'
+            r'\(fp_text (?:reference|value)', body):
+        st = m.start()
+        spans.append((st, _block(body, st)))
+    for st, blk in reversed(spans):
+        ei = blk.find('(effects')
+        if ei < 0:
+            continue
+        eb = _block(blk, ei)
+        newb = blk[:ei] + eb[:-1] + " (hide yes))" + blk[ei + len(eb):]
+        body = body[:st] + newb + body[st + len(blk):]
+    return body
+
+
 # placement: ref -> (x, y, rot, side)  absolute mm on board
+# Board: x 20..88, y 25..77; lug x 26..42 rising to y~13 with hole at (34,17).
+# U1 (rot270) puts its antenna edge on the right board edge; the OLED module
+# plugs into J1 and covers the upper-left area; USB-C on left edge bottom,
+# JST battery top-left, slide power switch + RGB chain along the bottom,
+# user buttons bottom-right.
 PLACEMENT = {
-    # usb-c + protection on left edge, port faces left
-    "J3": (26.0, 55.0, 90, "F"),
-    "D1": (34.0, 48.0, 90, "F"),
-    "F1": (36.0, 60.0, 90, "F"),
-    "C1": (40.0, 66.0, 0, "F"),
-    "U6": (33.0, 55.0, 0, "F"),
-    "R1": (40.0, 50.0, 0, "F"),
-    "R2": (40.0, 46.0, 0, "F"),
-    "R3": (45.0, 58.0, 90, "F"),
-    "R4": (45.0, 62.0, 90, "F"),
-    # charger group
-    "U2": (30.0, 66.0, 0, "F"),
-    "C2": (30.0, 71.0, 0, "F"),
-    "R5": (24.0, 70.0, 0, "F"),
-    "LED1": (24.0, 74.0, 0, "F"),
-    "R6": (28.0, 74.0, 90, "F"),
-    "J2": (24.0, 62.0, 270, "F"),
-    # switch + LDO
-    "SW3": (44.0, 66.0, 0, "F"),
-    "U3": (52.0, 60.0, 0, "F"),
-    "C3": (52.0, 66.0, 0, "F"),
-    "C4": (52.0, 54.0, 0, "F"),
-    # boost + level shift
-    "U4": (68.0, 56.0, 0, "F"),
+    # --- usb-c + protection, left edge ------------------------------------
+    "J3": (26.0, 66.0, 270, "F"),
+    "U6": (36.0, 64.0, 0, "F"),
+    "R3": (40.0, 63.5, 0, "F"),
+    "R4": (40.0, 66.5, 0, "F"),
+    "R1": (38.0, 58.0, 0, "F"),
+    "R2": (38.0, 60.8, 0, "F"),
+    "D1": (44.0, 60.0, 90, "F"),
+    "C1": (48.0, 58.5, 0, "F"),
+    "F1": (52.0, 59.0, 90, "F"),
+    # --- battery + charger -------------------------------------------------
+    "J2": (24.0, 52.0, 90, "F"),
+    "U2": (44.0, 66.5, 0, "F"),
+    "C2": (34.0, 67.5, 0, "F"),
+    "R5": (48.0, 65.5, 0, "F"),
+    "LED1": (62.0, 74.0, 0, "F"),
+    "R6": (60.0, 70.0, 90, "F"),
+    # --- power switch + LDO -------------------------------------------------
+    "SW3": (25.0, 74.5, 0, "F"),
+    "U3": (54.0, 64.0, 0, "F"),
+    "C3": (52.0, 67.5, 0, "F"),
+    "C4": (58.0, 67.5, 0, "F"),
+    # --- boost + level shift ------------------------------------------------
+    "U4": (68.0, 62.0, 0, "F"),
     "L1": (62.0, 62.0, 90, "F"),
-    "C8": (62.0, 56.0, 0, "F"),
-    "C9": (74.0, 50.0, 0, "F"),
-    "R11": (72.0, 62.0, 90, "F"),
-    "R12": (72.0, 66.0, 90, "F"),
-    "R13": (64.0, 50.0, 0, "F"),
-    "U5": (78.0, 60.0, 0, "F"),
-    "R14": (78.0, 66.0, 90, "F"),
-    # LEDs along bottom edge
-    "LED3": (46.0, 73.0, 0, "F"),
-    "LED4": (53.0, 73.0, 0, "F"),
-    "LED5": (60.0, 73.0, 0, "F"),
-    "LED6": (67.0, 73.0, 0, "F"),
-    "C10": (44.0, 73.0, 0, "F"),
-    "C11": (50.5, 73.0, 0, "F"),
-    "C12": (57.5, 73.0, 0, "F"),
-    "C13": (64.5, 73.0, 0, "F"),
-    # mcu + local passives
-    "U1": (72.0, 36.0, 0, "F"),
-    "C5": (62.0, 42.0, 0, "F"),
-    "C14": (62.0, 38.0, 0, "F"),
-    "C6": (62.0, 34.0, 0, "F"),
-    "R7": (58.0, 34.0, 90, "F"),
-    "R8": (58.0, 38.0, 90, "F"),
-    "R9": (80.0, 46.0, 0, "F"),
-    "R10": (80.0, 50.0, 0, "F"),
-    "C7": (84.0, 50.0, 0, "F"),
-    "SW1": (84.0, 38.0, 0, "F"),
-    "SW2": (84.0, 42.0, 0, "F"),
-    "SW4": (66.0, 28.0, 0, "F"),
-    "SW5": (78.0, 28.0, 0, "F"),
-    "LED2": (58.0, 42.0, 0, "F"),
-    "R15": (54.0, 42.0, 0, "F"),
-    # oled header top center + keyring hole in lug
+    "C8": (58.0, 62.5, 0, "F"),
+    "C9": (67.0, 59.0, 0, "F"),
+    "R11": (64.5, 59.5, 90, "F"),
+    "R12": (64.5, 62.5, 90, "F"),
+    "R13": (70.0, 66.0, 0, "F"),
+    "U5": (62.0, 66.0, 0, "F"),
+    "R14": (46.0, 70.5, 0, "F"),
+    # --- RGB chain along bottom edge ----------------------------------------
+    "LED3": (34.0, 74.0, 0, "F"),
+    "LED4": (42.0, 74.0, 180, "F"),
+    "LED5": (50.0, 74.0, 0, "F"),
+    "LED6": (56.0, 74.0, 180, "F"),
+    "C10": (35.0, 70.5, 0, "F"),
+    "C11": (38.0, 70.0, 0, "F"),
+    "C12": (53.0, 70.5, 0, "F"),
+    "C13": (56.0, 70.5, 0, "F"),
+    # --- MCU (antenna to right edge) + local passives -----------------------
+    "U1": (62.0, 51.0, 270, "F"),
+    "C5": (66.0, 42.0, 0, "F"),
+    "C14": (50.0, 35.0, 0, "F"),
+    "C6": (63.0, 42.5, 0, "F"),
+    "R7": (60.0, 42.5, 0, "F"),
+    "R8": (54.0, 55.0, 0, "F"),
+    "R9": (56.0, 34.0, 0, "F"),
+    "R10": (56.0, 38.0, 0, "F"),
+    "C7": (60.0, 38.0, 0, "F"),
+    "SW1": (76.0, 64.0, 0, "F"),
+    "SW2": (76.0, 70.0, 0, "F"),
+    "SW4": (84.0, 64.0, 0, "F"),
+    "SW5": (84.0, 70.0, 0, "F"),
+    "LED2": (68.0, 74.0, 0, "F"),
+    "R15": (69.0, 70.0, 0, "F"),
+    # --- OLED header + keyring hole ------------------------------------------
     "J1": (40.0, 30.0, 90, "F"),
     "H1": (34.0, 17.0, 0, "F"),
 }
+
+# keepout zones: (x0, y0, x1, y1) — no tracks/vias/pads/copperpour inside.
+# U1's antenna sits at the module's +x edge at rot270; keep copper out of its
+# shadow and let it hang at the board edge for sane BLE/WiFi range.
+KEEPOUTS = [(69.7, 43.0, 88.0, 59.0)]
 
 
 def build_pcb():
@@ -824,24 +852,48 @@ def build_pcb():
         i = body.index('(layer "')
         j = body.index(')', i)
         body = body[:j + 1] + ins + body[j + 1:]
-        # inject (net ...) into each pad
+        # inject (net ...) into each pad.  In .kicad_pcb a pad's (at x y a)
+        # stores a = pad rotation in *board* frame (footprint rot + pad rot
+        # from the library).  Library files store it relative to the
+        # footprint, so every pad angle must be offset by the footprint rot.
         parts = []
         last = 0
         for m in re.finditer(r'\(pad "([^"]*)"', body):
             st = m.start()
             pb = _block(body, st)
+            orig_len = len(pb)
+            at = re.search(
+                r'\(at ([-\d.]+) ([-\d.]+)(?: ([-\d.]+))?\)', pb)
+            if rot and at:
+                pa = float(at.group(3) or 0)
+                na = (pa + rot) % 360 if side == "F" else (rot - pa) % 360
+                pb = (pb[:at.start()] +
+                      f'(at {at.group(1)} {at.group(2)} {fmt(na)})' +
+                      pb[at.end():])
             net = pinnet.get((ref, m.group(1)))
             nb = (f'\n\t\t\t(net {netid[net]} "{net}")' if net else "")
             parts.append(body[last:st])
             parts.append(pb.rstrip()[:-1] + nb + ")")
-            last = st + len(pb)
+            last = st + orig_len
         parts.append(body[last:])
         body = "".join(parts)
-        # set Reference/Value property values
+        # set Reference/Value property values; hide their silk text — the
+        # board is too dense for per-part designators, labels are added
+        # manually below instead
         body = re.sub(r'\(property "Reference" "[^"]*"',
                       f'(property "Reference" "{ref}"', body, count=1)
         body = re.sub(r'\(property "Value" "[^"]*"',
                       f'(property "Value" "{value}"', body, count=1)
+        body = _hide_silk(body)
+        if ref == "U1":
+            # the library courtyard includes a 20mm-deep antenna keepout
+            # wing; we keep copper out via an explicit rule area instead,
+            # so shrink the courtyard to the module body only
+            body = re.sub(r'\n[^\n]*\(layer "F\.CrtYd"\)[^\n]*', "", body)
+            body = (body.rstrip()[:-1] +
+                    "\n\t\t(fp_rect (start -6.85 -11.25) (end 6.85 5.85)"
+                    "\n\t\t\t(stroke (width 0.05) (type solid))"
+                    " (fill none) (layer \"F.CrtYd\"))\n\t)")
         out.append("\t" + body.replace("\n", "\n\t"))
 
     # board outline: main rect + rounded lug with keyring hole -------------
@@ -882,15 +934,62 @@ def build_pcb():
                    '(fill (thermal_gap 0.3) (thermal_bridge_width 0.4)) '
                    f'(polygon (pts {zonepts})))')
 
-    # silkscreen title
-    out.append(f'\t(gr_text "PCB KEYCHAIN" (at 54 33 0) '
-               '(layer "F.SilkS") '
-               f'(uuid "{U("grt1")}") '
-               '(effects (font (size 2.5 2.5) (thickness 0.4))))')
-    out.append(f'\t(gr_text "rev A - devin" (at 54 37 0) '
-               '(layer "F.SilkS") '
-               f'(uuid "{U("grt2")}") '
-               '(effects (font (size 1 1) (thickness 0.15))))')
+    # keepout rule areas (antenna shadow etc.) ------------------------------
+    for i, (kx0, ky0, kx1, ky1) in enumerate(KEEPOUTS):
+        out.append(
+            f'\t(zone (layers "F.Cu" "B.Cu") (uuid "{U("ko:"+str(i))}") '
+            '(hatch edge 0.5) '
+            '(connect_pads (clearance 0)) '
+            '(min_thickness 0.25) '
+            '(keepout (tracks not_allowed) (vias not_allowed) '
+            '(pads allowed) (copperpour not_allowed) '
+            '(footprints allowed)) '
+            '(fill (thermal_gap 0.5) (thermal_bridge_width 0.5)) '
+            f'(polygon (pts (xy {fmt(kx0)} {fmt(ky0)}) '
+            f'(xy {fmt(kx1)} {fmt(ky0)}) (xy {fmt(kx1)} {fmt(ky1)}) '
+            f'(xy {fmt(kx0)} {fmt(ky1)}))))')
+
+    # routed copper ---------------------------------------------------------
+    import router
+    segs, vias, failed = router.route_all()
+    if failed:
+        raise SystemExit("router failed on nets: " + ", ".join(failed))
+    for (layer, x0, y0, x1, y1, w, net) in segs:
+        out.append(f'\t(segment (start {fmt(x0)} {fmt(y0)}) '
+                   f'(end {fmt(x1)} {fmt(y1)}) (width {fmt(w)}) '
+                   f'(layer "{layer}.Cu") (net {netid[net]}) '
+                   f'(uuid "{U("seg")}"))')
+    for (x, y, net) in vias:
+        out.append(f'\t(via (at {fmt(x)} {fmt(y)}) (size 0.8) (drill 0.4) '
+                   f'(layers "F.Cu" "B.Cu") (net {netid[net]}) '
+                   f'(uuid "{U("via")}"))')
+
+    # silkscreen ------------------------------------------------------------
+    def silk(txt, x, y, rot=0, size=1.0, thk=None):
+        thk = thk or round(size / 6.0, 3)
+        out.append(f'\t(gr_text "{txt}" (at {fmt(x)} {fmt(y)} {rot}) '
+                   '(layer "F.SilkS") '
+                   f'(uuid "{U("silk")}") '
+                   f'(effects (font (size {size} {size}) '
+                   f'(thickness {thk}))))')
+
+    # title on the lug, sideways so it reads when the keychain hangs
+    silk("PCB KEYCHAIN", 30.0, 22.0, 90, 1.4)
+    # oled module outline + pin labels (module plugs onto J1 and hangs up)
+    out.append(f'\t(gr_rect (start 29.5 26.5) (end 68.5 62.5) '
+               '(stroke (width 0.12) (type solid)) (fill none) '
+               f'(layer "F.SilkS") (uuid "{U("silk")}"))')
+    for i, lbl in enumerate(["GND", "VCC", "SCK", "SDA", "RES", "DC", "CS"]):
+        silk(lbl, 38.5 + 2.54 * i, 32.3, 0, 0.7)
+    # connector / control labels
+    silk("USB-C", 24.0, 61.5, 90, 1.0)
+    silk("BAT +-", 24.0, 28.5, 90, 0.9)
+    silk("PWR", 22.0, 74.0, 90, 0.8)
+    silk("A", 76.0, 61.0, 0, 1.0)
+    silk("B", 76.0, 72.5, 0, 1.0)
+    silk("BOOT", 84.0, 61.0, 90, 0.8)
+    silk("RST", 84.0, 73.0, 90, 0.8)
+    silk("rev A", 54.0, 26.8, 0, 0.8)
 
     out.append(')')
     return "\n".join(out) + "\n"
