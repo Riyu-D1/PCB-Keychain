@@ -9,6 +9,7 @@
         "silk_text_size_v": 1.0, "silk_text_thickness": 0.15
       },
       "diff_pair_dimensions": [], "drc_exclusions": [],
+      "rule_severities": {"lib_footprint_mismatch": "ignore"},
       "rules": {
         "max_error": 0.005, "min_clearance": 0.15,
         "min_copper_edge_clearance": 0.3, "min_hole_clearance": 0.25,

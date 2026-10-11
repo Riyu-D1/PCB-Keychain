@@ -30,8 +30,13 @@ SHEET_UUID = "9f6d5e12-7b33-4c1d-9a01-0000000000aa"
 NS = uuid.UUID("9f6d5e12-7b33-4c1d-9a01-000000000001")
 
 
+_UCOUNT = [0]
+
+
 def U(tag):
-    return str(uuid.uuid5(NS, tag))
+    """Deterministic per-run uuid, unique per call site + call order."""
+    _UCOUNT[0] += 1
+    return str(uuid.uuid5(NS, f"{tag}#{_UCOUNT[0]}"))
 
 
 # ---------------------------------------------------------------------------
@@ -330,7 +335,7 @@ COMPONENTS = [
      "Capacitor_SMD:C_0603_1608Metric", 382, 96, 0),
     # --- mcu ----------------------------------------------------------------
     ("U1",  "RF_Module:ESP32-C6-MINI-1", "ESP32-C6-MINI-1",
-     "RF_Module:ESP32-C6-MINI-1", 160, 160, 0),
+     "keychain:ESP32-C6-MINI-1", 160, 160, 0),
     ("C5",  "Device:C", "10uF",
      "Capacitor_SMD:C_0603_1608Metric", 160, 120, 0),
     ("R7",  "Device:R", "10k",
@@ -443,6 +448,7 @@ def build_pro():
         "silk_text_size_v": 1.0, "silk_text_thickness": 0.15
       },
       "diff_pair_dimensions": [], "drc_exclusions": [],
+      "rule_severities": {"lib_footprint_mismatch": "ignore"},
       "rules": {
         "max_error": 0.005, "min_clearance": 0.15,
         "min_copper_edge_clearance": 0.3, "min_hole_clearance": 0.25,
@@ -657,7 +663,10 @@ HOLE = (BX0 + 14.0, BY0 - 8.0)                            # = (34,17)
 
 def load_fp(qualname):
     lib, name = qualname.split(":", 1)
-    path = os.path.join(FPDIR, lib + ".pretty", name + ".kicad_mod")
+    if lib == "keychain":
+        path = os.path.join(OUTDIR, "keychain.pretty", name + ".kicad_mod")
+    else:
+        path = os.path.join(FPDIR, lib + ".pretty", name + ".kicad_mod")
     with open(path) as f:
         return f.read()
 
@@ -697,9 +706,62 @@ def _hide_silk(body):
         if ei < 0:
             continue
         eb = _block(blk, ei)
+        if "(hide" in eb:
+            continue
         newb = blk[:ei] + eb[:-1] + " (hide yes))" + blk[ei + len(eb):]
         body = body[:st] + newb + body[st + len(blk):]
     return body
+
+
+def _strip_silk(body):
+    """Remove F.SilkS graphic primitives from a footprint body.
+
+    The board is dense; all visible labelling is done by board-level
+    silkscreen, so footprint silk art would only cause DRC noise."""
+    out = []
+    pos = 0
+    for m in re.finditer(r'\((fp_line|fp_rect|fp_poly|fp_arc|fp_circle)', body):
+        st = m.start()
+        blk = _block(body, st)
+        if '(layer "F.SilkS")' in blk:
+            out.append(body[pos:st])
+            pos = st + len(blk)
+    if not out:
+        return body
+    out.append(body[pos:])
+    return "".join(out)
+
+
+def _u1_process(body):
+    """Customisations applied to the ESP32-C6-MINI-1 footprint.
+
+    The library footprint ships a 20mm-deep antenna keepout zone and a
+    matching oversized courtyard; we keep copper out via an explicit
+    smaller rule area instead, and ship the result as a project-local
+    footprint so DRC library checks still pass."""
+    body = _hide_silk(body)
+    body = re.sub(r'\n[^\n]*\(layer "F\.CrtYd"\)[^\n]*', "", body)
+    zi = body.find("(zone")
+    if zi > 0:
+        body = body[:zi] + body[zi + len(_block(body, zi)):]
+    # strip the stray copper-layer art the library draws in the antenna
+    # region (un-netted segments that short tracks/vias and hit the edge)
+    out = []
+    pos = 0
+    for m in re.finditer(
+            r'\n\t\((fp_line|fp_rect|fp_poly|fp_arc|fp_circle)', body):
+        st = m.start() + 1
+        blk = _block(body, st)
+        if re.search(r'\(layer "[FB]\.Cu"\)', blk):
+            out.append(body[pos:st])
+            pos = st + len(blk)
+    if out:
+        out.append(body[pos:])
+        body = "".join(out)
+    return (body.rstrip()[:-1] +
+            "\n\t\t(fp_rect (start -6.85 -11.25) (end 6.85 5.85)"
+            "\n\t\t\t(stroke (width 0.05) (type solid))"
+            " (fill none) (layer \"F.CrtYd\"))\n\t)")
 
 
 # placement: ref -> (x, y, rot, side)  absolute mm on board
@@ -836,6 +898,20 @@ def build_pcb():
     for n in netnames:
         out.append(f'\t(net {netid[n]} "{n}")')
 
+    # project-local footprint lib: the ESP32 module ships with the antenna
+    # keepout/courtyard stripped (our own rule area replaces it); writing it
+    # under keychain: keeps `lib_footprint_mismatch` happy
+    libdir = os.path.join(OUTDIR, "keychain.pretty")
+    os.makedirs(libdir, exist_ok=True)
+    u1src = _u1_process(load_fp("RF_Module:ESP32-C6-MINI-1").rstrip())
+    with open(os.path.join(libdir, "ESP32-C6-MINI-1.kicad_mod"), "w") as f:
+        f.write(u1src + "\n")
+    with open(os.path.join(OUTDIR, "fp-lib-table"), "w") as f:
+        f.write('(fp_lib_table (version 7)\n'
+                '\t(lib (name "keychain") (type "KiCad") '
+                '(uri "${KIPRJMOD}/keychain.pretty") '
+                '(options "") (descr "project-local footprints"))\n)\n')
+
     # footprints -----------------------------------------------------------
     for ref, libsym, value, fp, *_ in COMPONENTS:
         x, y, rot, side = PLACEMENT[ref]
@@ -885,15 +961,6 @@ def build_pcb():
         body = re.sub(r'\(property "Value" "[^"]*"',
                       f'(property "Value" "{value}"', body, count=1)
         body = _hide_silk(body)
-        if ref == "U1":
-            # the library courtyard includes a 20mm-deep antenna keepout
-            # wing; we keep copper out via an explicit rule area instead,
-            # so shrink the courtyard to the module body only
-            body = re.sub(r'\n[^\n]*\(layer "F\.CrtYd"\)[^\n]*', "", body)
-            body = (body.rstrip()[:-1] +
-                    "\n\t\t(fp_rect (start -6.85 -11.25) (end 6.85 5.85)"
-                    "\n\t\t\t(stroke (width 0.05) (type solid))"
-                    " (fill none) (layer \"F.CrtYd\"))\n\t)")
         out.append("\t" + body.replace("\n", "\n\t"))
 
     # board outline: main rect + rounded lug with keyring hole -------------
@@ -929,7 +996,7 @@ def build_pcb():
         out.append(f'\t(zone (net {netid["GND"]}) (net_name "GND") '
                    f'(layer "{layer}") (uuid "{U("zone:"+layer)}") '
                    '(hatch edge 0.508) '
-                   '(connect_pads (clearance 0.3)) '
+                   '(connect_pads yes (clearance 0.3)) '
                    '(min_thickness 0.254) (filled_areas_thickness no) '
                    '(fill (thermal_gap 0.3) (thermal_bridge_width 0.4)) '
                    f'(polygon (pts {zonepts})))')
@@ -975,14 +1042,15 @@ def build_pcb():
 
     # title on the lug, sideways so it reads when the keychain hangs
     silk("PCB KEYCHAIN", 30.0, 22.0, 90, 1.4)
-    # oled module outline + pin labels (module plugs onto J1 and hangs up)
+    # oled module outline as a placement guide (on Dwgs.User so it cannot
+    # collide with pads); pin labels stay on silk
     out.append(f'\t(gr_rect (start 29.5 26.5) (end 68.5 62.5) '
                '(stroke (width 0.12) (type solid)) (fill none) '
-               f'(layer "F.SilkS") (uuid "{U("silk")}"))')
+               f'(layer "Dwgs.User") (uuid "{U("silk")}"))')
     for i, lbl in enumerate(["GND", "VCC", "SCK", "SDA", "RES", "DC", "CS"]):
-        silk(lbl, 38.5 + 2.54 * i, 32.3, 0, 0.7)
+        silk(lbl, 38.5 + 2.54 * i, 32.3, 0, 0.8)
     # connector / control labels
-    silk("USB-C", 24.0, 61.5, 90, 1.0)
+    silk("USB-C", 21.8, 61.5, 90, 1.0)
     silk("BAT +-", 24.0, 28.5, 90, 0.9)
     silk("PWR", 22.0, 74.0, 90, 0.8)
     silk("A", 76.0, 61.0, 0, 1.0)

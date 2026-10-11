@@ -37,11 +37,15 @@ WIDTHS = {"VBUS": POWER_W, "VBUS_F": POWER_W, "VBAT": POWER_W,
 # route order: short local nets first, then the power rails while
 # corridors are still open, then long signal runs last
 ORDER = [
+    # the fine-pitch USB-C escape is the most constrained: route it first,
+    # middle pads before outer ones so early tracks cannot wall in the
+    # interior fan-out lanes
+    "USB_DM_CONN", "USB_DP_CONN", "CC1", "CC2",
+    "VBUS", "VBUS_F",
     "LED_D0", "LED_C1", "LED_C2", "LED_C3", "LED_DIN",
     "BOOST_SW", "LED_FB", "BOOST_EN",
-    "USB_DP_CONN", "USB_DM_CONN", "CC1", "CC2",
     "CHG_LED", "PROG", "PWR_LED", "BAT_ADC",
-    "+3V3", "+5V", "VBAT_SYS", "VBAT", "VBUS_F", "VBUS",
+    "+3V3", "+5V", "VBAT_SYS", "VBAT",
     "LED_DAT_3V", "USB_DP", "USB_DM",
     "OLED_SCK", "OLED_MOSI", "OLED_RES", "OLED_DC", "OLED_CS",
     "USER1", "USER2", "BOOT", "EN", "CHG_STAT",
@@ -193,6 +197,18 @@ class Router:
                 self._block_rect(occ, "F", r)
                 if dr:    # plated/unplated hole -> both layers
                     self._block_rect(occ, "B", r)
+                    # hole-edge clearance needs margin beyond the pad ring
+                    hm = dr[0] / 2 + 0.35 + hw
+                    self._block_rect(
+                        occ, "B", Rect(ax - max(w, dr[0]) / 2 - hm,
+                                       ay - max(h, dr[1]) / 2 - hm,
+                                       ax + max(w, dr[0]) / 2 + hm,
+                                       ay + max(h, dr[1]) / 2 + hm))
+                    self._block_rect(
+                        occ, "F", Rect(ax - max(w, dr[0]) / 2 - hm,
+                                       ay - max(h, dr[1]) / 2 - hm,
+                                       ax + max(w, dr[0]) / 2 + hm,
+                                       ay + max(h, dr[1]) / 2 + hm))
                 vi = vinf
                 if dr:
                     vi = max(vi, dr[0] / 2 + 0.25 + VIA_DRILL / 2)
@@ -251,22 +267,44 @@ class Router:
                 out.add((int(round(ax / GRID)), int(round(ay / GRID))))
         return out
 
-    def astar(self, occ, starts, goals, width):
-        """4-conn A* + via transitions. Returns [(layer,ix,iy)...] or None."""
+    # guaranteed fan-out corridors: a straight stub off the pad tip that
+    # is emitted as real copper and reserved as start/goal cells, so the
+    # fine-pitch escape cannot be walled in by neighbours' tracks
+    STUB_LEN = {"J3": 1.0}     # J3 zipper pads escape in +x
+
+    def stub_end(self, rp):
+        if rp[0] not in self.STUB_LEN:
+            return None
+        ax, ay = self.shapes[rp][0][:2]
+        return (ax + self.STUB_LEN[rp[0]], ay)
+
+    def stub_cells(self, rp, width):
+        """pad cells plus cells along the pad's escape stub (if any)."""
+        cells = set(self.pad_cells(rp, width))
+        end = self.stub_end(rp)
+        if end:
+            ax, ay = self.shapes[rp][0][:2]
+            iy = int(round(ay / GRID))
+            ix0 = int(round(ax / GRID))
+            ix1 = int(round(end[0] / GRID))
+            cells.update((ix, iy) for ix in range(ix0, ix1 + 1))
+        return cells
+
+    def astar(self, occ, viab, starts, goals, width):
+        """4-conn A* + via transitions. Returns [(layer,ix,iy)...] or None.
+
+        goals is a set of (layer, ix, iy) states: reaching a goal on the
+        wrong layer does not count (an SMD pad exists only on F)."""
         goalset = set(goals)
-        gx = {}
-        gy = {}
-        for g in goals:
-            gx.setdefault(g[0], g[0])
-            gy.setdefault(g[1], g[1])
-        gx = sorted(gx); gy = sorted(gy)
+        gx = sorted({g[1] for g in goals})
+        gy = sorted({g[2] for g in goals})
 
         def heur(ix, iy):
             dx = min(abs(ix - a) for a in gx)
             dy = min(abs(iy - a) for a in gy)
             return (dx + dy) * GRID
 
-        openq = [(heur(*s), 0.0, ("F", s[0], s[1])) for s in starts]
+        openq = [(heur(s[1], s[2]), 0.0, s) for s in starts]
         heapq.heapify(openq)
         best = {}
         came = {}
@@ -278,7 +316,7 @@ class Router:
             best[state] = cost
             layer, ix, iy = state
             exp += 1
-            if (ix, iy) in goalset:
+            if state in goalset:
                 path = [state]
                 while state in came:
                     state = came[state]
@@ -286,7 +324,7 @@ class Router:
                 return list(reversed(path))
             for dx_, dy_ in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                 nx, ny = ix + dx_, iy + dy_
-                if occ[layer].get((nx, ny)) and (nx, ny) not in goalset:
+                if occ[layer].get((nx, ny)) and (layer, nx, ny) not in goalset:
                     continue
                 ns = (layer, nx, ny)
                 nc = cost + GRID
@@ -294,13 +332,23 @@ class Router:
                     came[ns] = state
                     heapq.heappush(openq, (nc + heur(nx, ny), nc, ns))
             ol = "B" if layer == "F" else "F"
-            if not occ[ol].get((ix, iy)) or (ix, iy) in goalset:
+            if (ix, iy) not in viab and \
+                    (not occ[ol].get((ix, iy)) or (ol, ix, iy) in goalset):
                 ns = (ol, ix, iy)
                 nc = cost + VIA_COST
                 if ns not in best or nc < best[ns] - 1e-9:
                     came[ns] = state
                     heapq.heappush(openq, (nc + heur(ix, iy), nc, ns))
         return None
+
+    def start_cells(self, rp, width, stubs=False):
+        """start states: pad cells on F, plus B for through-hole pads."""
+        cells = (self.stub_cells(rp, width) if stubs
+                 else self.pad_cells(rp, width))
+        out = [("F", ix, iy) for (ix, iy) in cells]
+        if any(dr for *_, dr in self.shapes[rp]):
+            out += [("B", ix, iy) for (ix, iy) in cells]
+        return out
 
     def route(self, net):
         """Route one net -> list of emitted items, or None on failure."""
@@ -312,12 +360,25 @@ class Router:
         pts = {rp: self.shapes[rp][0][:2] for rp in pads}
         cx = sum(p[0] for p in pts.values()) / len(pts)
         cy = sum(p[1] for p in pts.values()) / len(pts)
-        remaining = sorted(pads, key=lambda rp:
-                           (pts[rp][0] - cx) ** 2 + (pts[rp][1] - cy) ** 2)
+        base = sorted(pads, key=lambda rp:
+                      (pts[rp][0] - cx) ** 2 + (pts[rp][1] - cy) ** 2)
         for attempt in range(MAX_NET_ATTEMPTS):
-            occ = self.setup(net, width)
+            occ, viab = self.setup(net, width)
+            self._occ = occ
+            # second try: reversed seed order -> different tree, different
+            # corridors claimed first
+            remaining = list(base if attempt == 0 else reversed(base))
             tree = [remaining.pop(0)]
-            treecells = set(self.pad_cells(tree[0], width))
+            # goal states: (layer,ix,iy) cells the new path may terminate
+            # on.  SMD pads exist on F only; drilled pads and via cells
+            # count on both layers.
+            goals = set()
+            viacells = set()
+            for c in self.stub_cells(tree[0], width):
+                layers = ("F", "B") if any(
+                    dr for *_, dr in self.shapes[tree[0]]) else ("F",)
+                for L in layers:
+                    goals.add((L,) + c)
             paths = []
             fail = None
             while remaining:
@@ -325,30 +386,59 @@ class Router:
                     (pts[rp][0] - pts[q][0]) ** 2 +
                     (pts[rp][1] - pts[q][1]) ** 2 for q in tree))
                 rp = remaining[0]
-                goals = set(treecells)
-                goals |= set()
-                for q in tree:
-                    goals |= self.pad_cells(q, width)
-                starts = self.pad_cells(rp, width)
-                path = self.astar(occ, list(starts), list(goals), width)
+                path = self.astar(occ, viab,
+                                  self.start_cells(rp, width, stubs=True),
+                                  goals, width)
                 if path is None:
                     fail = rp
                     break
                 paths.append(path)
-                for (layer, ix, iy) in path:
-                    treecells.add((ix, iy))
+                for i, (layer, ix, iy) in enumerate(path):
+                    goals.add((layer, ix, iy))
+                    if i and path[i - 1][0] != layer:
+                        viacells.add((ix, iy))
+                for vc in viacells:
+                    goals.add(("F",) + vc)
+                    goals.add(("B",) + vc)
+                q = rp
+                for c in self.stub_cells(q, width):
+                    layers = ("F", "B") if any(
+                        dr for *_, dr in self.shapes[q]) else ("F",)
+                    for L in layers:
+                        goals.add((L,) + c)
                 tree.append(rp)
                 remaining.pop(0)
             if fail is None:
                 self.commit(net, width, paths)
                 return paths
-            remaining = sorted(pads, key=lambda rp:
-                               (pts[rp][0] - cx) ** 2 + (pts[rp][1] - cy) ** 2)
         return None
 
     def commit(self, net, width, paths):
         """Convert cell paths to segments/vias and record as obstacles."""
+        padcell = {}
+        for rp in self.pads_by_net.get(net, []):
+            for c in self.pad_cells(rp, width):
+                padcell[c] = rp
+            end = self.stub_end(rp)
+            if end:
+                ax, ay = self.shapes[rp][0][:2]
+                self.emit_seg(net, "F", (ax / GRID, ay / GRID),
+                              (end[0] / GRID, end[1] / GRID), width)
         for path in paths:
+            # anchor path endpoints to pad centres: grid cells near a small
+            # pad edge may not geometrically touch the pad otherwise.  The
+            # anchor is only emitted when its straight run is clear of
+            # foreign obstacles.
+            for (layer, ix, iy) in (path[0], path[-1]):
+                rp = padcell.get((ix, iy))
+                if rp is None:
+                    continue
+                ax, ay = self.shapes[rp][0][:2]
+                own = {c for c, q in padcell.items() if q == rp}
+                if self._anchor_clear(layer, ax, ay, ix * GRID, iy * GRID,
+                                      own):
+                    self.emit_seg(net, layer, (ax / GRID, ay / GRID),
+                                  (ix, iy), width)
             # split into maximal straight runs on the same layer
             run_layer = path[0][0]
             run_start = (path[0][1], path[0][2])
@@ -372,6 +462,20 @@ class Router:
                             run_start = (ix, iy)
                 prev = (ix, iy)
             self.emit_seg(net, run_layer, run_start, prev, width)
+
+    def _anchor_clear(self, layer, ax, ay, bx, by, owncells):
+        """True if a straight anchor seg a->b only crosses free/own cells."""
+        occ = getattr(self, "_occ", None)
+        if occ is None:
+            return True
+        steps = max(1, int(math.hypot(bx - ax, by - ay) / (GRID * 0.5)))
+        for i in range(steps + 1):
+            t = i / steps
+            c = (int(round((ax + (bx - ax) * t) / GRID)),
+                 int(round((ay + (by - ay) * t) / GRID)))
+            if c not in owncells and occ[layer].get(c):
+                return False
+        return True
 
     def emit_seg(self, net, layer, a, b, width):
         if a == b:
