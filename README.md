@@ -14,6 +14,8 @@ It runs off a small LiPo. A TP4056 charges it from the SuperMini's USB-C, a slid
 ## Parts
 Full list in [bom.csv](bom.csv).
 
+Cost: about $28.16 USD for one keychain (single-unit prices from LCSC, Waveshare, Tindie and Adafruit, not counting the PCB, shipping or LCSC minimum order quantities).
+
 - ESP32-C3 SuperMini
 - Waveshare 2.36" e-Paper Module (G)
 - 4x SK6812MINI LEDs

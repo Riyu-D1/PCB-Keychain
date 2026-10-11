@@ -1,12 +1,15 @@
-"Reference","Value","Footprint","QUANTITY"
-"C1,C2","10uF","Capacitor_SMD:C_0603_1608Metric","2"
-"C3-C6","100nF","Capacitor_SMD:C_0603_1608Metric","4"
-"D1-D4","SK6812MINI","LED_SMD:LED_SK6812MINI_PLCC4_3.5x3.5mm_P1.75mm","4"
-"D5","SS14","Diode_SMD:D_SMA","1"
-"J1","EPAPER","Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical","1"
-"J2","SuperMini-L","Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical","1"
-"J3","SuperMini-R","Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical","1"
-"J4","BATTERY","Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical","1"
-"R1","1.2k","Resistor_SMD:R_0603_1608Metric","1"
-"SW1","SW_SPDT","Button_Switch_SMD:SW_SPDT_PCM12","1"
-"U1","TP4056","Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm","1"
+Reference,Value,Footprint,Quantity,Supplier,Supplier Part,Unit Price (USD),Line Total (USD),Link
+"C1,C2",10uF,Capacitor_SMD:C_0603_1608Metric,2,LCSC,C19702,0.0308,0.0616,https://www.lcsc.com/product-detail/C19702.html
+"C3,C4,C5,C6",100nF,Capacitor_SMD:C_0603_1608Metric,4,LCSC,C14663,0.0141,0.0564,https://www.lcsc.com/product-detail/C14663.html
+"D1,D2,D3,D4",SK6812MINI,LED_SMD:LED_SK6812MINI_PLCC4_3.5x3.5mm_P1.75mm,4,LCSC,C5149201,0.0810,0.3240,https://www.lcsc.com/product-detail/C5149201.html
+D5,SS14,Diode_SMD:D_SMA,1,LCSC,C2480,0.0192,0.0192,https://www.lcsc.com/product-detail/C2480.html
+J1,1x8 2.54mm header (EPAPER),Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical,1,LCSC,C2337,0.1599,0.1599,https://www.lcsc.com/product-detail/C2337.html
+"J2,J3","1x8 2.54mm header (SuperMini, cut from J1's 1x40 strip)",Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical,2,LCSC,C2337,0.0000,0.0000,https://www.lcsc.com/product-detail/C2337.html
+J4,JST PH 2-pin B2B-PH-K,Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical,1,LCSC,C131337,0.0357,0.0357,https://www.lcsc.com/product-detail/C131337.html
+R1,1.2k,Resistor_SMD:R_0603_1608Metric,1,LCSC,C22765,0.0034,0.0034,https://www.lcsc.com/product-detail/C22765.html
+SW1,PCM12 SPDT slide switch,Button_Switch_SMD:SW_SPDT_PCM12,1,LCSC,C221841,1.2754,1.2754,https://www.lcsc.com/product-detail/C221841.html
+U1,TP4056,Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm,1,LCSC,C16581,0.1862,0.1862,https://www.lcsc.com/product-detail/C16581.html
+(off-board),ESP32-C3 SuperMini,,1,Tindie (Maker go),adz1122,3.9000,3.9000,https://www.tindie.com/products/adz1122/esp32-c3-development-board-esp32-supermini/
+(off-board),Waveshare 2.36inch e-Paper Module (G),,1,Waveshare,2.36inch e-Paper Module (G),15.1900,15.1900,https://www.waveshare.com/2.36inch-e-paper-module-g.htm
+(off-board),LiPo 3.7V 400mAh with JST-PH,,1,Adafruit,3898,6.9500,6.9500,https://www.adafruit.com/product/3898
+TOTAL,,,,,,,28.16,
