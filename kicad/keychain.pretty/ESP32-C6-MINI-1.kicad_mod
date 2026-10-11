@@ -109,78 +109,14 @@
 		(layer "F.SilkS")
 		(uuid "e69eec11-8079-440c-aa62-5c8972b16240")
 	)
-	(fp_line
-		(start -21.6 -26)
-		(end 21.6 -26)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "90bc09a6-737d-433e-a693-9bd0f0dee08a")
-	)
-	(fp_line
-		(start -21.6 -5.6)
-		(end -21.6 -26)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "093b13c9-81ab-4c6e-8b30-6b070c729124")
-	)
-	(fp_line
-		(start -6.85 -5.6)
-		(end -21.6 -5.6)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "e3bbd6f5-d2fd-4b81-b7e5-d7044a3ac36d")
-	)
-	(fp_line
-		(start -6.85 5.85)
-		(end -6.85 -5.6)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "5db2bc54-7d76-4f66-8e3c-01609831e998")
-	)
-	(fp_line
-		(start 6.85 -5.6)
-		(end 6.85 5.85)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "bcebe185-38eb-4d71-ba17-4ebb1fba34a2")
-	)
-	(fp_line
-		(start 6.85 -5.6)
-		(end 21.6 -5.6)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "df104b38-f1b1-44ba-b418-329e4c8a5ee5")
-	)
-	(fp_line
-		(start 6.85 5.85)
-		(end -6.85 5.85)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "4b92a0bf-13b3-4bc0-aa94-84498e0f03b1")
-	)
-	(fp_line
-		(start 21.6 -5.6)
-		(end 21.6 -26)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(uuid "3baae484-ea84-489b-8027-507d54840c5a")
-	)
+	
+	
+	
+	
+	
+	
+	
+	
 	(fp_line
 		(start -6.6 -11)
 		(end 6.6 -11)
@@ -571,7 +507,7 @@
 		(roundrect_rratio 0)
 		(chamfer_ratio 0.41)
 		(chamfer top_left)
-		
+		(zone_connect 2)
 		(uuid "ef360ca5-18e3-4c5f-84d3-4f893e552218")
 	)
 	(pad "49" smd rect
@@ -662,42 +598,7 @@
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(uuid "dee68e96-1934-4f40-b186-ac8acf13d77a")
 	)
-	(zone
-		(layers "F.Cu" "B.Cu" "In1.Cu" "In2.Cu" "In3.Cu" "In4.Cu" "In5.Cu" "In6.Cu"
-			"In7.Cu" "In8.Cu" "In9.Cu" "In10.Cu" "In11.Cu" "In12.Cu" "In13.Cu" "In14.Cu"
-			"In15.Cu" "In16.Cu" "In17.Cu" "In18.Cu" "In19.Cu" "In20.Cu" "In21.Cu"
-			"In22.Cu" "In23.Cu" "In24.Cu" "In25.Cu" "In26.Cu" "In27.Cu" "In28.Cu"
-			"In29.Cu" "In30.Cu"
-		)
-		(uuid "259ec563-2c3a-4249-906b-2fa87025c285")
-		(name "Antenna")
-		(hatch full 0.508)
-		(connect_pads
-			(clearance 0)
-		)
-		(min_thickness 0.254)
-		(keepout
-			(tracks not_allowed)
-			(vias not_allowed)
-			(pads not_allowed)
-			(copperpour not_allowed)
-			(footprints not_allowed)
-		)
-		(placement
-			(enabled no)
-			(sheetname "")
-		)
-		(fill
-			(thermal_gap 0.508)
-			(thermal_bridge_width 0.508)
-			(island_removal_mode 0)
-		)
-		(polygon
-			(pts
-				(xy 21.6 -5.6) (xy -21.6 -5.6) (xy -21.6 -26) (xy 21.6 -26)
-			)
-		)
-	)
+	
 	(embedded_fonts no)
 	(model "${KICAD10_3DMODEL_DIR}/RF_Module.3dshapes/ESP32-C6-MINI-1.step"
 		(offset

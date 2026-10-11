@@ -453,8 +453,9 @@ def build_pro():
         "max_error": 0.005, "min_clearance": 0.15,
         "min_copper_edge_clearance": 0.3, "min_hole_clearance": 0.25,
         "min_hole_to_hole": 0.25, "min_silk_clearance": 0.0,
-        "min_track_width": 0.15, "min_via_annulus": 0.15,
-        "min_via_diameter": 0.5, "solder_mask_to_copper_clearance": 0.0,
+        "min_through_hole_diameter": 0.2, "min_track_width": 0.15,
+        "min_via_annular_width": 0.1, "min_via_annulus": 0.1,
+        "min_via_diameter": 0.45, "solder_mask_to_copper_clearance": 0.0,
         "use_height_for_length_calcs": true
       },
       "track_widths": [0.25, 0.4, 0.5, 0.8],
@@ -740,8 +741,23 @@ def _u1_process(body):
     smaller rule area instead, and ship the result as a project-local
     footprint so DRC library checks still pass."""
     body = _hide_silk(body)
-    body = re.sub(r'\n[^\n]*\(layer "F\.CrtYd"\)[^\n]*', "", body)
-    zi = body.find("(zone")
+    # drop whole fp_* blocks on F.CrtYd (deleting just the layer line would
+    # leave a layer-less primitive that KiCad defaults to F.Cu)
+    out = []
+    pos = 0
+    for m in re.finditer(r'\((fp_line|fp_rect|fp_poly|fp_arc|fp_circle)', body):
+        st = m.start()
+        blk = _block(body, st)
+        if '(layer "F.CrtYd")' in blk:
+            out.append(body[pos:st])
+            pos = st + len(blk)
+    if out:
+        out.append(body[pos:])
+        body = "".join(out)
+    zi = -1
+    zm = re.search(r'\(zone\b', body)   # \(zone\b skips (zone_connect ...)
+    if zm:
+        zi = zm.start()
     if zi > 0:
         body = body[:zi] + body[zi + len(_block(body, zi)):]
     # strip the stray copper-layer art the library draws in the antenna
@@ -749,8 +765,8 @@ def _u1_process(body):
     out = []
     pos = 0
     for m in re.finditer(
-            r'\n\t\((fp_line|fp_rect|fp_poly|fp_arc|fp_circle)', body):
-        st = m.start() + 1
+            r'\((fp_line|fp_rect|fp_poly|fp_arc|fp_circle)', body):
+        st = m.start()
         blk = _block(body, st)
         if re.search(r'\(layer "[FB]\.Cu"\)', blk):
             out.append(body[pos:st])
@@ -773,9 +789,9 @@ def _u1_process(body):
 PLACEMENT = {
     # --- usb-c + protection, left edge ------------------------------------
     "J3": (26.0, 66.0, 270, "F"),
-    "U6": (36.0, 64.0, 0, "F"),
-    "R3": (40.0, 63.5, 0, "F"),
-    "R4": (40.0, 66.5, 0, "F"),
+    "U6": (34.0, 56.5, 0, "F"),
+    "R3": (40.5, 63.5, 0, "F"),
+    "R4": (40.0, 66.8, 0, "F"),
     "R1": (38.0, 58.0, 0, "F"),
     "R2": (38.0, 60.8, 0, "F"),
     "D1": (44.0, 60.0, 90, "F"),
@@ -784,7 +800,7 @@ PLACEMENT = {
     # --- battery + charger -------------------------------------------------
     "J2": (24.0, 52.0, 90, "F"),
     "U2": (44.0, 66.5, 0, "F"),
-    "C2": (34.0, 67.5, 0, "F"),
+    "C2": (42.0, 70.0, 0, "F"),
     "R5": (48.0, 65.5, 0, "F"),
     "LED1": (62.0, 74.0, 0, "F"),
     "R6": (60.0, 70.0, 90, "F"),
@@ -996,9 +1012,10 @@ def build_pcb():
         out.append(f'\t(zone (net {netid["GND"]}) (net_name "GND") '
                    f'(layer "{layer}") (uuid "{U("zone:"+layer)}") '
                    '(hatch edge 0.508) '
-                   '(connect_pads yes (clearance 0.3)) '
-                   '(min_thickness 0.254) (filled_areas_thickness no) '
-                   '(fill (thermal_gap 0.3) (thermal_bridge_width 0.4)) '
+                   '(connect_pads yes (clearance 0.22)) '
+                   '(min_thickness 0.15) (filled_areas_thickness no) '
+                   '(fill (thermal_gap 0.3) (thermal_bridge_width 0.4) '
+                   '(island_removal_mode 0)) '
                    f'(polygon (pts {zonepts})))')
 
     # keepout rule areas (antenna shadow etc.) ------------------------------
@@ -1050,13 +1067,13 @@ def build_pcb():
     for i, lbl in enumerate(["GND", "VCC", "SCK", "SDA", "RES", "DC", "CS"]):
         silk(lbl, 38.5 + 2.54 * i, 32.3, 0, 0.8)
     # connector / control labels
-    silk("USB-C", 21.8, 61.5, 90, 1.0)
+    silk("USB-C", 21.4, 66.0, 90, 0.9)
     silk("BAT +-", 24.0, 28.5, 90, 0.9)
-    silk("PWR", 22.0, 74.0, 90, 0.8)
-    silk("A", 76.0, 61.0, 0, 1.0)
-    silk("B", 76.0, 72.5, 0, 1.0)
-    silk("BOOT", 84.0, 61.0, 90, 0.8)
-    silk("RST", 84.0, 73.0, 90, 0.8)
+    silk("PWR", 29.9, 74.5, 0, 0.8)
+    silk("A", 76.0, 59.8, 0, 0.8)
+    silk("B", 76.0, 75.2, 0, 0.8)
+    silk("BOOT", 84.0, 59.8, 0, 0.8)
+    silk("RST", 84.0, 75.2, 0, 0.8)
     silk("rev A", 54.0, 26.8, 0, 0.8)
 
     out.append(')')
