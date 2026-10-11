@@ -43,6 +43,10 @@ def main():
             t.SetPosition(pcbnew.VECTOR2I(int((x + dx) * MM),
                                           int((y + dy) * MM)))
 
+    # LED4's mirrored silk ref trips phantom DRC pairings; keep it on fab.
+    if "LED4" in fps:
+        fps["LED4"].Reference().SetLayer(pcbnew.B_Fab)
+
     pcbnew.SaveBoard(P.PCB, board)
     print("finish_board: flipped",
           sum(1 for p in P.PLACEMENT.values() if p[3] == "B"),
