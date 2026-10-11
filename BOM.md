@@ -17,7 +17,6 @@
 | [SK6812MINI](https://www.lcsc.com/product-detail/C5149201.html) | — | 4 | $0.08 | $0.32 | [LCSC](https://www.lcsc.com/product-detail/C5149201.html) |
 | [SS14](https://www.lcsc.com/product-detail/C2480.html) | — | 1 | $0.02 | $0.02 | [LCSC](https://www.lcsc.com/product-detail/C2480.html) |
 | [1x8 2.54mm header (EPAPER)](https://www.lcsc.com/product-detail/C2337.html) | — | 1 | $0.16 | $0.16 | [LCSC](https://www.lcsc.com/product-detail/C2337.html) |
-| [1x8 2.54mm header (SuperMini, cut from J1's 1x40 strip)](https://www.lcsc.com/product-detail/C2337.html) | — | 2 | $0.00 | $0.00 | [LCSC](https://www.lcsc.com/product-detail/C2337.html) |
 | [JST PH 2-pin B2B-PH-K](https://www.lcsc.com/product-detail/C131337.html) | — | 1 | $0.04 | $0.04 | [LCSC](https://www.lcsc.com/product-detail/C131337.html) |
 | [PCM12 SPDT slide switch](https://www.lcsc.com/product-detail/C221841.html) | — | 1 | $1.28 | $1.28 | [LCSC](https://www.lcsc.com/product-detail/C221841.html) |
 | [TP4056](https://www.lcsc.com/product-detail/C16581.html) | — | 1 | $0.19 | $0.19 | [LCSC](https://www.lcsc.com/product-detail/C16581.html) |
